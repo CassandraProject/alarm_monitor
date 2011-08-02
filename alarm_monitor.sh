@@ -1,7 +1,8 @@
 #!/bin/bash
 
 #
-# script to scan for matching process alarms
+# script to generate process alarm messages
+# to be run in cron every hour
 #
 
 PROG_DIR=/opt/customer/scripts/alarm_monitor
@@ -17,6 +18,13 @@ NEW_ALARMS=$PROG_DIR/new_alarms.csv
 SORT_PROG=/nutc/mksnt/sort
 TOUCH_PROG=/nutc/mksnt/touch
 RM_PROG=/nutc/mksnt/rm
+PRUNE_PROG=$PROG_DIR/prune_log.pl
+PRUNE_LOG=$PROG_DIR/pruned_log.csv
+SORT_PROG=/nutc/mksnt/sort
+CUT_PROG=/nutc/mksnt/cut
+TAIL_PROG=/nutc/mksnt/tail
+
+
 
 # get all the possible alarms
 start_time=0
@@ -33,6 +41,11 @@ fi
 $GET_ALARM_PROG $ALMHIST "$start_time" "$end_time" | $MATCH_ALARM_PROG $MATCH_ALARM_CONFIG | $SORT_PROG -t, -k6,7 -k1,3 > $MATCH_ALARM_FILE
 
 #
+# get oldest date
+#
+oldest_date=`$GET_ALARM_PROG $ALMHIST 0 0 | $CUT_PROG -d, -f6 | $SORT_PROG -r | $TAIL_PROG -1`
+
+#
 # see if the matching alarms are already in the log file
 #
 if [ ! -f $ALARM_LOG ]
@@ -44,6 +57,12 @@ fi
 $LOG_CHECK_PROG $ALARM_LOG < $MATCH_ALARM_FILE > $NEW_ALARMS
 while read line
 do
+	#echo "$line"
 	$MAIL_PROG "$line"
 	echo "$line" >> $ALARM_LOG
 done < $NEW_ALARMS
+
+# remove old alarms from the log
+$PRUNE_PROG $ALARM_LOG "$oldest_date" > $PRUNE_LOG
+mv $PRUNE_LOG $ALARM_LOG
+
