@@ -50,6 +50,6 @@ Google Voice which would be a free provider
 
 ## Thanks ##
 
-The following people have contributed patches to  close_list - thanks!
+The following people have contributed patches to  alarm_monitor - thanks!
 
 * [Jeremy Milum](http://github.com/jmilum)
